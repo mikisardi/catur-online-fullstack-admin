@@ -1,4 +1,5 @@
 import { Chess } from 'chess.js';
+import { prisma } from '@prisma/client';
 import { prisma } from '../prisma.js';
 import { applyMove } from '../chess.js';
 
@@ -70,7 +71,7 @@ export async function submitBotMove(gameId: string, level='medium') {
 export async function finalizeGame(gameId: string, result: 'WHITE'|'BLACK'|'DRAW', reason: string, r: RuntimeGame) {
   const game = await prisma.game.findUnique({ where: { id: gameId } }); if (!game || game.status === 'FINISHED') return;
   const winnerId = result === 'WHITE' ? game.whitePlayerId : result === 'BLACK' ? game.blackPlayerId : null;
-  await prisma.$transaction(async tx => {
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     await tx.game.update({ where: { id: gameId }, data: { status: 'FINISHED', result, resultReason: reason, finalFen: r.chess.fen(), pgn: r.chess.pgn(), endedAt: new Date() } });
     if (game.mode === 'ONLINE' && game.whitePlayerId && game.blackPlayerId) {
       const [rw, rb] = await Promise.all([tx.rating.findUnique({where:{userId:game.whitePlayerId}}), tx.rating.findUnique({where:{userId:game.blackPlayerId}})]);
