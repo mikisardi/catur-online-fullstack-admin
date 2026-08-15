@@ -1,5 +1,5 @@
 import { Chess } from 'chess.js';
-import { prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../prisma.js';
 import { applyMove } from '../chess.js';
 
