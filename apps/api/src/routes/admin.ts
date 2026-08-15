@@ -9,9 +9,14 @@ export async function adminRoutes(app: FastifyInstance) {
   app.get('/api/v1/admin/overview', adminOnly, async () => {
     const [activeGames, queue, users, finishedToday, suspended, banned, openReports] = await Promise.all([
       prisma.game.count({ where: { status: 'ACTIVE' } }),
-      prisma.matchmakingTicket.count({ where: { status: 'WAITING' } }),
+      prisma.matchmakingTicket.count({ where: { status: 'SEARCHING' } }),
       prisma.user.count(),
-      prisma.game.count({ where: { status: 'FINISHED', finishedAt: { gte: startOfToday() } } }),
+      prisma.game.count({
+        where: {
+          status: 'FINISHED',
+          endedAt: { gte: startOfToday() }
+        }
+      }),
       prisma.user.count({ where: { status: 'SUSPENDED' } }),
       prisma.user.count({ where: { status: 'BANNED' } }),
       prisma.report.count({ where: { status: 'OPEN' } }),
@@ -66,9 +71,9 @@ export async function adminRoutes(app: FastifyInstance) {
 
   app.get('/api/v1/admin/matchmaking', adminOnly, async () => {
     const tickets = await prisma.matchmakingTicket.findMany({
-      where: { status: 'WAITING' },
+      where: { status: 'SEARCHING' },
       include: { user: { select: { id: true, username: true } } },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { queuedAt: 'asc' },
     });
     return { tickets };
   });
