@@ -1,6 +1,6 @@
 import { Chess } from 'chess.js';
-import { prisma } from '../prisma';
-import { applyMove } from '../chess';
+import { prisma } from '../prisma.js';
+import { applyMove } from '../chess.js';
 
 export type RuntimeGame = { chess: Chess; whiteMs: number; blackMs: number; lastAt: number; pendingDrawBy?: string };
 const runtime = new Map<string, RuntimeGame>();
