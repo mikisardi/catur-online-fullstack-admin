@@ -1,0 +1,153 @@
+datasource db { provider = "postgresql" url = env("DATABASE_URL") }
+generator client { provider = "prisma-client-js" }
+
+enum Role { USER MODERATOR ADMIN SUPER_ADMIN }
+enum UserStatus { ACTIVE SUSPENDED BANNED }
+enum GameMode { ONLINE BOT }
+enum GameStatus { CREATED WAITING ACTIVE FINISHED ABORTED ARCHIVED }
+enum GameResult { WHITE BLACK DRAW }
+enum MatchStatus { SEARCHING MATCHED CANCELLED EXPIRED }
+enum DrawStatus { OFFERED ACCEPTED DECLINED }
+
+model User {
+  id              String   @id @default(cuid())
+  username        String   @unique
+  email           String   @unique
+  passwordHash    String
+  role            Role     @default(USER)
+  status          UserStatus @default(ACTIVE)
+  createdAt       DateTime @default(now())
+  profile         Profile?
+  rating          Rating?
+  whiteGames      Game[]   @relation("whitePlayer")
+  blackGames      Game[]   @relation("blackPlayer")
+  moves           GameMove[]
+  tickets         MatchmakingTicket[]
+  sessions        Session[]
+  reportsMade     Report[] @relation("reporter")
+  reportsAgainst  Report[] @relation("reported")
+  adminActions    AdminAction[]
+  notifications   Notification[]
+}
+
+model Profile {
+  userId      String @id
+  displayName String?
+  avatarUrl   String?
+  bio         String?
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Rating {
+  userId      String @id
+  mode        String @default("blitz")
+  rating      Int    @default(1200)
+  peakRating  Int    @default(1200)
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Game {
+  id              String     @id @default(cuid())
+  mode            GameMode
+  status          GameStatus @default(CREATED)
+  timeControl     String
+  initialSeconds  Int
+  incrementSeconds Int
+  whitePlayerId   String?
+  blackPlayerId   String?
+  result          GameResult?
+  resultReason    String?
+  initialFen      String
+  finalFen        String?
+  pgn             String?
+  startedAt       DateTime?
+  endedAt         DateTime?
+  createdAt       DateTime   @default(now())
+  whitePlayer     User? @relation("whitePlayer", fields: [whitePlayerId], references: [id])
+  blackPlayer     User? @relation("blackPlayer", fields: [blackPlayerId], references: [id])
+  moves           GameMove[]
+  drawOffers      DrawOffer[]
+  reports         Report[]
+  @@index([whitePlayerId, endedAt])
+  @@index([blackPlayerId, endedAt])
+}
+
+model GameMove {
+  id           String   @id @default(cuid())
+  gameId       String
+  ply          Int
+  moveUci      String
+  moveSan      String
+  fenAfter     String
+  clockWhiteMs Int
+  clockBlackMs Int
+  createdAt    DateTime @default(now())
+  game         Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  @@unique([gameId, ply])
+}
+
+model MatchmakingTicket {
+  id          String      @id @default(cuid())
+  userId      String
+  timeControl String
+  rating      Int
+  status      MatchStatus @default(SEARCHING)
+  queuedAt    DateTime    @default(now())
+  expiresAt   DateTime
+  matchedGameId String?
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([status, timeControl, queuedAt])
+}
+
+model DrawOffer {
+  id          String     @id @default(cuid())
+  gameId      String
+  offeredBy   String
+  status      DrawStatus @default(OFFERED)
+  createdAt   DateTime   @default(now())
+  respondedAt DateTime?
+  game        Game       @relation(fields: [gameId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+  id         String   @id @default(cuid())
+  userId     String
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, expiresAt])
+}
+
+model Report {
+  id              String   @id @default(cuid())
+  reporterId      String
+  reportedUserId  String
+  gameId          String?
+  reason          String
+  status          String   @default("OPEN")
+  createdAt       DateTime @default(now())
+  reporter        User @relation("reporter", fields: [reporterId], references: [id])
+  reportedUser    User @relation("reported", fields: [reportedUserId], references: [id])
+  game            Game? @relation(fields: [gameId], references: [id])
+}
+
+model AdminAction {
+  id           String   @id @default(cuid())
+  adminId      String
+  targetUserId String?
+  action       String
+  metadataJson Json?
+  createdAt    DateTime @default(now())
+  admin        User @relation(fields: [adminId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  payloadJson Json?
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
