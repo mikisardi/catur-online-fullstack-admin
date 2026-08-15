@@ -1,8 +1,8 @@
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
-import { config } from '../config';
-import { prisma } from '../prisma';
-import { loadRuntime } from '../services/gameService';
+import { config } from '../config.js';
+import { prisma } from '../prisma.js';
+import { loadRuntime } from '../services/gameService.js';
 export function attachRealtime(io: Server) {
   io.use(async (socket, next) => { try { const token = socket.handshake.auth?.token || socket.handshake.headers.cookie?.match(/session=([^;]+)/)?.[1]; if (!token) return next(new Error('AUTH_REQUIRED')); const p:any = jwt.verify(token, config.jwtSecret); const u = await prisma.user.findUnique({where:{id:p.sub}}); if(!u) return next(new Error('AUTH_REQUIRED')); socket.data.userId=u.id; next(); } catch { next(new Error('AUTH_REQUIRED')); } });
   io.on('connection', socket => {
