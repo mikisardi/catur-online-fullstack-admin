@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
-import { prisma } from '../prisma';
-import { auth, roles } from '../middleware/auth';
+import { prisma } from '../prisma.js';
+import { auth, roles } from '../middleware/auth.js';
 export async function publicRoutes(app:FastifyInstance){
  app.get('/api/v1/leaderboard',async()=>({data:await prisma.user.findMany({take:50,select:{id:true,username:true,rating:{select:{rating:true}},_count:{select:{whiteGames:true,blackGames:true}}},orderBy:{rating:{rating:'desc'}}})}));
  app.get('/api/v1/history',{preHandler:auth},async(req)=>{const g=await prisma.game.findMany({where:{OR:[{whitePlayerId:req.user!.id},{blackPlayerId:req.user!.id}]},orderBy:{createdAt:'desc'},take:50,include:{whitePlayer:{select:{username:true}},blackPlayer:{select:{username:true}}}}); return {data:g};});
