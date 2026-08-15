@@ -1,18 +1,57 @@
 datasource db {
   provider = "postgresql"
-  url = env("DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
+
 generator client {
   provider = "prisma-client-js"
 }
 
-enum Role { USER MODERATOR ADMIN SUPER_ADMIN }
-enum UserStatus { ACTIVE SUSPENDED BANNED }
-enum GameMode { ONLINE BOT }
-enum GameStatus { CREATED WAITING ACTIVE FINISHED ABORTED ARCHIVED }
-enum GameResult { WHITE BLACK DRAW }
-enum MatchStatus { SEARCHING MATCHED CANCELLED EXPIRED }
-enum DrawStatus { OFFERED ACCEPTED DECLINED }
+enum Role {
+  USER
+  MODERATOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+
+enum GameMode {
+  ONLINE
+  BOT
+}
+
+enum GameStatus {
+  CREATED
+  WAITING
+  ACTIVE
+  FINISHED
+  ABORTED
+  ARCHIVED
+}
+
+enum GameResult {
+  WHITE
+  BLACK
+  DRAW
+}
+
+enum MatchStatus {
+  SEARCHING
+  MATCHED
+  CANCELLED
+  EXPIRED
+}
+
+enum DrawStatus {
+  OFFERED
+  ACCEPTED
+  DECLINED
+}
 
 model User {
   id              String   @id @default(cuid())
