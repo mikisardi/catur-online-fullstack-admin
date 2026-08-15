@@ -1,0 +1,22 @@
+import 'dotenv/config';
+import Fastify from 'fastify';
+import cookie from '@fastify/cookie';
+import cors from '@fastify/cors';
+import helmet from '@fastify/helmet';
+import rateLimit from '@fastify/rate-limit';
+import { Server } from 'socket.io';
+import { config } from './config';
+import { authRoutes } from './routes/auth';
+import { gameRoutes } from './routes/games';
+import { matchmakingRoutes } from './routes/matchmaking';
+import { publicRoutes } from './routes/public';
+import { botRoutes } from './routes/bot';
+import { adminRoutes } from './routes/admin';
+import { attachRealtime } from './realtime/socket';
+const app=Fastify({logger:true});
+(app as any).io = null;
+app.register(cookie); app.register(cors,{origin:config.corsOrigins,credentials:true}); app.register(helmet); app.register(rateLimit,{max:120,timeWindow:'1 minute'});
+app.get('/health',async()=>({status:'ok'}));
+app.register(authRoutes); app.register(gameRoutes); app.register(matchmakingRoutes); app.register(publicRoutes); app.register(botRoutes); app.register(adminRoutes);
+async function start(){await app.ready(); const io=new Server(app.server,{cors:{origin:config.corsOrigins,credentials:true}}); (app as any).io=io; attachRealtime(io); await app.listen({port:config.port,host:'0.0.0.0'});}
+start().catch(e=>{app.log.error(e);process.exit(1)});
