@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { prisma } from '../prisma';
-import { auth, roles } from '../middleware/auth';
+import { prisma } from '../prisma.js';
+import { auth, roles } from '../middleware/auth.js';
 
 const adminOnly = { preHandler: [auth, roles('ADMIN', 'SUPER_ADMIN')] };
 
