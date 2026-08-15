@@ -1,8 +1,8 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { prisma } from '../prisma';
-import { auth } from '../middleware/auth';
-import { initRuntime } from '../services/gameService';
+import { prisma } from '../prisma.js';
+import { auth } from '../middleware/auth.js';
+import { initRuntime } from '../services/gameService.js';
 const queues = new Map<string,string[]>();
 export async function matchmakingRoutes(app:FastifyInstance){
  app.post('/api/v1/matchmaking/join',{preHandler:auth},async(req,reply)=>{const b=z.object({timeControl:z.string().regex(/^\d+\+\d+$/)}).parse(req.body); const [secs,inc]=b.timeControl.split('+').map(Number); const r=await prisma.rating.findUnique({where:{userId:req.user!.id}}); const q=queues.get(b.timeControl)||[]; const opponent=q.find(id=>id!==req.user!.id); if(opponent){queues.set(b.timeControl,q.filter(id=>id!==opponent)); const ticket=await prisma.matchmakingTicket.create({data:{userId:req.user!.id,timeControl:b.timeControl,rating:r?.rating||1200,expiresAt:new Date(Date.now()+60000),status:'MATCHED'}}); const other=await prisma.matchmakingTicket.findFirst({where:{userId:opponent,timeControl:b.timeControl,status:'SEARCHING'}}); if(other) await prisma.matchmakingTicket.update({where:{id:other.id},data:{status:'MATCHED'}}); const game=await prisma.game.create({data:{mode:'ONLINE',timeControl:b.timeControl,initialSeconds:secs,incrementSeconds:inc,whitePlayerId:opponent,blackPlayerId:req.user!.id,status:'ACTIVE',initialFen:'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',startedAt:new Date()}}); initRuntime(game.id,game.initialFen,secs*1000,secs*1000); (app as any).io?.to(`queue:${opponent}`).emit('matchmaking:matched',{gameId:game.id}); return {data:{status:'MATCHED',gameId:game.id,ticketId:ticket.id}}; }
