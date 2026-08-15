@@ -12,6 +12,8 @@
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^10.0.2",
+    "@fastify/helmet": "^13.0.0",
+    "@fastify/rate-limit": "^10.2.0",
     "@prisma/client": "^6.10.1",
     "bcryptjs": "^2.4.3",
     "chess.js": "^1.0.0",
