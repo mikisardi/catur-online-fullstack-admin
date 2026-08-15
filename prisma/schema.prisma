@@ -65,7 +65,6 @@ model User {
   rating          Rating?
   whiteGames      Game[]   @relation("whitePlayer")
   blackGames      Game[]   @relation("blackPlayer")
-  moves           GameMove[]
   tickets         MatchmakingTicket[]
   sessions        Session[]
   reportsMade     Report[] @relation("reporter")
