@@ -1,0 +1,26 @@
+{
+  "name": "catur-online-fullstack",
+  "private": true,
+  "workspaces": ["apps/web", "apps/api"],
+  "scripts": {
+    "dev": "concurrently \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "npm --workspace apps/api run dev",
+    "dev:web": "npm --workspace apps/web run dev",
+    "build": "npm run build:api && npm run build:web",
+    "build:api": "npm --workspace apps/api run build",
+    "build:web": "npm --workspace apps/web run build",
+    "lint": "npm run lint:api && npm run lint:web",
+    "lint:api": "npm --workspace apps/api run lint",
+    "lint:web": "npm --workspace apps/web run lint",
+    "test": "npm --workspace apps/api run test",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "prisma": "^6.10.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}
