@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import jwt from 'jsonwebtoken';
-import { config } from '../config';
-import { prisma } from '../prisma';
+import { config } from '../config.js';
+import { prisma } from '../prisma.js';
 
 declare module 'fastify' { interface FastifyRequest { user?: { id: string; role: string; username: string } } }
 export async function auth(request: FastifyRequest, reply: FastifyReply) {
