@@ -114,13 +114,9 @@ export default function Board({ fen, onMove }: BoardProps) {
             onClick={() => handleSquareClick(square)}
             aria-label={square}
           >
-            {piece && (
-              <span
-                className={`piece ${
-                  piece.color === 'w' ? 'whitepiece' : 'blackpiece'
-                }`}
-              >
-                {pieceMap[piece.type]}
+            {p && (
+              <span className={`piece ${p.color === 'w' ? 'whitepiece' : 'blackpiece'}`}>
+                {pieceMap[p.type]}
               </span>
             )}
           </button>
