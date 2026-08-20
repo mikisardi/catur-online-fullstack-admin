@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { auth } from '../middleware/auth.js';
 import { prisma } from '../prisma.js';
-import { initRuntime } from '../services/gameService.js';
+import { initRuntime, submitBotMove } from '../services/gameService.js';
 export async function botRoutes(app:FastifyInstance){
   app.post('/api/v1/bot/games',{preHandler:auth},async(req)=>{
     const b = z.object({
