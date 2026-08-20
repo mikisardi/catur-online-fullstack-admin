@@ -15,5 +15,29 @@ export async function botRoutes(app:FastifyInstance){
       b.color === 'RANDOM'
       ? (Math.random() < 0.5 ? 'WHITE' : 'BLACK')
       : b.color;
-    const fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'; const g=await prisma.game.create({data:{mode:'BOT',timeControl:b.timeControl,initialSeconds:secs,incrementSeconds:inc,whitePlayerId:req.user!.id,status:'ACTIVE',initialFen:fen,startedAt:new Date()}}); initRuntime(g.id,fen,secs*1000,secs*1000); return {data:{...g,level:b.level}};});
+    const fen='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+    const whitePlayerId = playerColor === 'WHITE' ? req.user!.id : null;
+    const blackPlayerId = playerColor === 'BLACK' ? req.user!.id : null;
+    const g=await prisma.game.create({
+    data:{
+      mode:'BOT',
+      timeControl:b.timeControl,
+      initialSeconds:secs,
+      incrementSeconds:inc,
+      whitePlayerId,
+      blackPlayerId,
+      status:'ACTIVE',
+      initialFen:fen,
+      startedAt:new Date()
+      }
+    }); 
+    initRuntime(g.id,fen,secs*1000,secs*1000); 
+    return {
+    data: {
+      ...g,
+      level: b.level,
+      playerColor,
+      },
+    };
+  });
 }
