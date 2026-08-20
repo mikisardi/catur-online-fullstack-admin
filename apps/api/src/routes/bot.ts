@@ -31,7 +31,12 @@ export async function botRoutes(app:FastifyInstance){
       startedAt:new Date()
       }
     }); 
-    initRuntime(g.id,fen,secs*1000,secs*1000); 
+    initRuntime(g.id, fen, secs * 1000, secs * 1000);
+
+    if (playerColor === 'BLACK') {
+    await submitBotMove(g.id, b.level, 'WHITE');
+    }
+
     return {
     data: {
       ...g,
