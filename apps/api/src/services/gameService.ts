@@ -67,6 +67,11 @@ export async function submitBotMove(
   botColor = game.whitePlayerId ? 'BLACK' : 'WHITE';
   }
   if (!botColor) throw new Error('INVALID_BOT_COLOR');
+  const botTurn = botColor === 'WHITE' ? 'w' : 'b';
+
+  if (r.chess.turn() !== botTurn) {
+    throw new Error('NOT_BOT_TURN');
+  }
   const selected = chooseBotMove(r, level); if (!selected) return null;
   const move = applyMove(r.chess, selected.uci, selected.promotion);
   const ply = r.chess.history().length; const now=Date.now();
