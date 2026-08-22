@@ -11,7 +11,7 @@ export async function gameRoutes(app:FastifyInstance){
   const game=await prisma.game.findUnique({where:{id}}); let botMove=null; 
   if (game?.mode === 'BOT' && game.status === 'ACTIVE') {
   const botColor = game.whitePlayerId === req.user!.id ? 'BLACK' : 'WHITE';
-  botMove = await submitBotMove(id, 'medium', botColor);
+  botMove = await submitBotMove(id, game.botLevel || 'medium', botColor);
   }
   const payload={playerMove,botMove}; (app as any).io?.to(`game:${id}`).emit('game:move_applied',payload); 
   if (botMove?.finished) {
