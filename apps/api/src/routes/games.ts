@@ -21,7 +21,16 @@ export async function gameRoutes(app:FastifyInstance){
     reason: 'checkmate'
   });
   } 
-  return {data:payload};}catch(e:any){const code=e.message; const map:any={FORBIDDEN:403,CONFLICT:409,INVALID_MOVE:422,TIMEOUT:409}; return reply.code(map[code]||422).send({error:{code:code==='Error'?'INVALID_MOVE':code,message:'Move ditolak'}})}});
+  return {data:payload};}catch(e:any){const code=e.message;
+  const map:any={
+   FORBIDDEN:403,
+   CONFLICT:409,
+   INVALID_MOVE:422,
+   TIMEOUT:409,
+   NOT_BOT_TURN:409,
+   INVALID_BOT_COLOR:409
+   };
+  return reply.code(map[code]||422).send({error:{code:code==='Error'?'INVALID_MOVE':code,message:'Move ditolak'}})}});
  app.post('/api/v1/games/:id/resign',{preHandler:auth},async(req,reply)=>{const {id}=req.params as any; const g=await prisma.game.findUnique({where:{id}}); if(!g||![g.whitePlayerId,g.blackPlayerId].includes(req.user!.id))return reply.code(403).send({error:{code:'FORBIDDEN',message:'Forbidden'}}); const r=await loadRuntime(id); const result=g.whitePlayerId===req.user!.id?'BLACK':'WHITE'; await finalizeGame(id,result,'resign',r); (app as any).io?.to(`game:${id}`).emit('game:finish',{result,reason:'resign'}); return {data:true};});
  app.post('/api/v1/games/:id/draw-offer',{preHandler:auth},async(req)=>{const {id}=req.params as any; await prisma.drawOffer.create({data:{gameId:id,offeredBy:req.user!.id}}); (app as any).io?.to(`game:${id}`).emit('game:draw_offer',{offeredBy:req.user!.id}); return {data:true};});
  app.post('/api/v1/games/:id/rematch',{preHandler:auth},async(req,reply)=>{const {id}=req.params as any; const g=await prisma.game.findUnique({where:{id}});if(!g||g.status!=='FINISHED')return reply.code(409).send({error:{code:'CONFLICT',message:'Game belum selesai'}}); const ng=await prisma.game.create({data:{mode:g.mode,timeControl:g.timeControl,initialSeconds:g.initialSeconds,incrementSeconds:g.incrementSeconds,whitePlayerId:g.blackPlayerId,blackPlayerId:g.whitePlayerId,status:'ACTIVE',initialFen:'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',startedAt:new Date()}}); initRuntime(ng.id,ng.initialFen,ng.initialSeconds*1000,ng.initialSeconds*1000); return {data:ng};});
