@@ -34,12 +34,21 @@ export async function botRoutes(app:FastifyInstance){
     initRuntime(g.id, fen, secs * 1000, secs * 1000);
     let botMove = null;
     if (playerColor === 'BLACK') {
-    botMove = await submitBotMove(g.id, b.level, 'WHITE');
+      botMove = await submitBotMove(g.id, b.level, 'WHITE');
+      if (botMove) {
+        (app as any).io?.to(`game:${g.id}`).emit('game:move_applied', {
+        playerMove: null,
+        botMove,
+        });
+      }
     }
+    const game = await prisma.game.findUnique({
+    where: { id: g.id },
+    });
 
     return {
-    data: {
-      ...g,
+      data: {
+      ...game,
       level: b.level,
       playerColor,
       botMove,
