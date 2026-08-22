@@ -21,6 +21,7 @@ export async function botRoutes(app:FastifyInstance){
     const g=await prisma.game.create({
     data:{
       mode:'BOT',
+      botLevel:b.level,
       timeControl:b.timeControl,
       initialSeconds:secs,
       incrementSeconds:inc,
