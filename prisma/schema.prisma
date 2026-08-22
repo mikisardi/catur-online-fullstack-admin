@@ -92,6 +92,7 @@ model Rating {
 model Game {
   id              String     @id @default(cuid())
   mode            GameMode
+  botLevel        String?
   status          GameStatus @default(CREATED)
   timeControl     String
   initialSeconds  Int
