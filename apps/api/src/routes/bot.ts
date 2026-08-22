@@ -32,9 +32,9 @@ export async function botRoutes(app:FastifyInstance){
       }
     }); 
     initRuntime(g.id, fen, secs * 1000, secs * 1000);
-
+    let botMove = null;
     if (playerColor === 'BLACK') {
-    await submitBotMove(g.id, b.level, 'WHITE');
+    botMove = await submitBotMove(g.id, b.level, 'WHITE');
     }
 
     return {
@@ -42,6 +42,7 @@ export async function botRoutes(app:FastifyInstance){
       ...g,
       level: b.level,
       playerColor,
+      botMove,
       },
     };
   });
