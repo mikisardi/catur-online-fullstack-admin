@@ -7,7 +7,14 @@ function Play(){const [tc,setTc]=useState('5+0');const nav=useNavigate();const [
 function Game(){const {id}=useParams();const [g,setG]=useState<any>();const [status,setStatus]=useState('');useEffect(()=>{(async()=>{const j=await api('/api/v1/games/'+id);setG(j.data)})(); const s=io(API,{withCredentials:true}); s.on('connect',()=>s.emit('room:join',{gameId:id})); s.on('game:snapshot',(x)=>setG((old:any)=>({...old,...x,moves:old?.moves||[]}))); s.on('game:move_applied',()=>api('/api/v1/games/'+id).then(j=>setG(j.data)).catch(()=>{})); s.on('game:finish',(x)=>setStatus(x.reason+': '+x.result)); return()=>{s.disconnect()}},[id]);
                 if(!g)return <Layout><div className="card">Loading...</div></Layout>; 
                 const playerColor = g.whitePlayerId ? 'WHITE' : 'BLACK';
-                const move=async(uci:string)=>{try{await api('/api/v1/games/'+id+'/move',{method:'POST',body:JSON.stringify({move:uci})});const j=await api('/api/v1/games/'+id);setG(j.data)}catch(e:any){alert(e.message)}};return <Layout><div className="game"><div><Board fen={g.fen||g.initialFen} onMove={move}/></div><aside className="card side"><h2>Game</h2><p>Status: {status||g.status}</p><p>Turn: {g.turn||'w'}</p><p>White: {Math.ceil((g.whiteMs||g.initialSeconds*1000)/1000)}s</p><p>Black: {Math.ceil((g.blackMs||g.initialSeconds*1000)/1000)}s</p><div className="actions"><button className="btn" onClick={()=>api('/api/v1/games/'+id+'/resign',{method:'POST'})}>Resign</button><button className="btn" onClick={()=>api('/api/v1/games/'+id+'/draw-offer',{method:'POST'})}>Offer Draw</button></div></aside></div></Layout>}
+                const move=async(uci:string)=>{try{await api('/api/v1/games/'+id+'/move',{method:'POST',body:JSON.stringify({move:uci})});const j=await api('/api/v1/games/'+id);setG(j.data)}catch(e:any){alert(e.message)}};return <Layout><div className="game">
+                  <div>
+                  <Board
+                    fen={g.fen || g.initialFen}
+                    onMove={move}
+                    playerColor={playerColor}
+                  />
+                  </div><aside className="card side"><h2>Game</h2><p>Status: {status||g.status}</p><p>Turn: {g.turn||'w'}</p><p>White: {Math.ceil((g.whiteMs||g.initialSeconds*1000)/1000)}s</p><p>Black: {Math.ceil((g.blackMs||g.initialSeconds*1000)/1000)}s</p><div className="actions"><button className="btn" onClick={()=>api('/api/v1/games/'+id+'/resign',{method:'POST'})}>Resign</button><button className="btn" onClick={()=>api('/api/v1/games/'+id+'/draw-offer',{method:'POST'})}>Offer Draw</button></div></aside></div></Layout>}
 function Bot(){
   const nav=useNavigate();
   const [color,setColor]=useState<'WHITE'|'BLACK'|'RANDOM'>('RANDOM');
