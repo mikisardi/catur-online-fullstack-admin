@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 type BoardProps = {
   fen: string;
   onMove: (uci: string) => Promise<void> | void;
+  playerColor: 'WHITE' | 'BLACK';
 };
 
 const pieceMap: Record<string, string> = {
@@ -17,7 +18,7 @@ const pieceMap: Record<string, string> = {
 
 const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 
-export default function Board({ fen, onMove }: BoardProps) {
+export default function Board({ fen, onMove, playerColor }: BoardProps) {
   const chess = useMemo(() => {
     try {
       return new Chess(fen);
@@ -30,16 +31,26 @@ export default function Board({ fen, onMove }: BoardProps) {
   const [submitting, setSubmitting] = useState(false);
 
   const squares = useMemo(() => {
-    const result: string[] = [];
+  const result: string[] = [];
 
-    for (let rank = 8; rank >= 1; rank -= 1) {
-      for (const file of files) {
-        result.push(`${file}${rank}`);
-      }
+  const ranks =
+    playerColor === 'WHITE'
+      ? [8, 7, 6, 5, 4, 3, 2, 1]
+      : [1, 2, 3, 4, 5, 6, 7, 8];
+
+  const boardFiles =
+    playerColor === 'WHITE'
+      ? files
+      : [...files].reverse();
+
+  for (const rank of ranks) {
+    for (const file of boardFiles) {
+      result.push(`${file}${rank}`);
     }
+  }
 
-    return result;
-  }, []);
+  return result;
+  }, [playerColor]);
 
   const handleSquareClick = async (square: string) => {
     if (submitting) return;
