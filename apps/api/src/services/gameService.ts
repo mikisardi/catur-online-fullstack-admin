@@ -11,15 +11,21 @@ export function initRuntime(id: string, fen: string, whiteMs: number, blackMs: n
 function withLock<T>(id: string, fn: () => Promise<T>): Promise<T> {
   const prev = locks.get(id) || Promise.resolve();
 
-  const next = prev
-    .then(fn)
-    .finally(() => {
-      if (locks.get(id) === next) {
-        locks.delete(id);
-      }
-    });
+  const next = prev.then(fn);
 
-  locks.set(id, next.then(() => undefined, () => undefined));
+  locks.set(
+    id,
+    next.then(
+      () => undefined,
+      () => undefined
+    )
+  );
+
+  next.finally(() => {
+    if (locks.get(id)) {
+      locks.delete(id);
+    }
+  });
 
   return next;
 }
@@ -162,27 +168,36 @@ export async function submitBotMove(
   gameId: string,
   level = 'medium',
   botColor?: 'WHITE' | 'BLACK'
-  ) {
-  const r = await loadRuntime(gameId);
-  const game = await prisma.game.findUnique({ where: { id: gameId } });
-  if (!game || game.mode !== 'BOT' || game.status !== 'ACTIVE') return null;
-  if (!botColor) {
-  botColor = game.whitePlayerId ? 'BLACK' : 'WHITE';
-  }
-  if (!botColor) throw new Error('INVALID_BOT_COLOR');
-  const botTurn = botColor === 'WHITE' ? 'w' : 'b';
+) {
+  return withLock(gameId, async () => {
+    const game = await prisma.game.findUnique({
+      where: { id: gameId }
+    });
 
-  if (r.chess.turn() !== botTurn) {
-    throw new Error('NOT_BOT_TURN');
-  }
-  const selected = chooseBotMove(r, level); if (!selected) return null;
-  const move = applyMove(r.chess, selected.uci, selected.promotion);
-  const ply = r.chess.history().length; const now=Date.now();
-  r.lastAt = now;
-  await prisma.gameMove.create({ data: { gameId, ply, moveUci:selected.uci, moveSan:move.san, fenAfter:r.chess.fen(), clockWhiteMs:Math.max(0,r.whiteMs), clockBlackMs:Math.max(0,r.blackMs) } });
-  if (r.chess.isCheckmate()) await finalizeGame(gameId, botColor,'checkmate',r);
-  else if (r.chess.isDraw() || r.chess.isStalemate()) await finalizeGame(gameId,'DRAW','draw',r);
-  return { moveSan:move.san, uci:selected.uci, fen:r.chess.fen(), pgn:r.chess.pgn(), turn:r.chess.turn(), whiteMs:r.whiteMs, blackMs:r.blackMs, finished:r.chess.isGameOver() };
+    if (
+      !game ||
+      game.mode !== 'BOT' ||
+      game.status !== 'ACTIVE'
+    ) {
+      return null;
+    }
+
+    if (!botColor) {
+      botColor = game.whitePlayerId
+        ? 'BLACK'
+        : 'WHITE';
+    }
+
+    if (!botColor) {
+      throw new Error('INVALID_BOT_COLOR');
+    }
+
+    return performBotMove(
+      gameId,
+      level,
+      botColor
+    );
+  });
 }
 export async function finalizeGame(gameId: string, result: 'WHITE'|'BLACK'|'DRAW', reason: string, r: RuntimeGame) {
   const game = await prisma.game.findUnique({ where: { id: gameId } }); if (!game || game.status === 'FINISHED') return;
