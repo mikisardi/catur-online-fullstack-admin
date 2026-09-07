@@ -8,7 +8,21 @@ const runtime = new Map<string, RuntimeGame>();
 const locks = new Map<string, Promise<void>>();
 export function getRuntime(id: string) { return runtime.get(id); }
 export function initRuntime(id: string, fen: string, whiteMs: number, blackMs: number) { const r = { chess: new Chess(fen), whiteMs, blackMs, lastAt: Date.now() }; runtime.set(id, r); return r; }
-function withLock(id: string, fn: () => Promise<void>) { const prev = locks.get(id) || Promise.resolve(); const next = prev.then(fn).finally(() => { if (locks.get(id) === next) locks.delete(id); }); locks.set(id, next); return next; }
+function withLock<T>(id: string, fn: () => Promise<T>): Promise<T> {
+  const prev = locks.get(id) || Promise.resolve();
+
+  const next = prev
+    .then(fn)
+    .finally(() => {
+      if (locks.get(id) === next) {
+        locks.delete(id);
+      }
+    });
+
+  locks.set(id, next.then(() => undefined, () => undefined));
+
+  return next;
+}
 export async function loadRuntime(gameId: string) {
   if (runtime.has(gameId)) return runtime.get(gameId)!;
   const g = await prisma.game.findUnique({ where: { id: gameId }, include: { moves: { orderBy: { ply: 'asc' } } } });
