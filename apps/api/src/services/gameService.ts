@@ -11,23 +11,23 @@ export function initRuntime(id: string, fen: string, whiteMs: number, blackMs: n
 function withLock<T>(id: string, fn: () => Promise<T>): Promise<T> {
   const prev = locks.get(id) || Promise.resolve();
 
-  const next = prev.then(fn);
+  let release!: () => void;
 
-  locks.set(
-    id,
-    next.then(
-      () => undefined,
-      () => undefined
-    )
-  );
-
-  next.finally(() => {
-    if (locks.get(id)) {
-      locks.delete(id);
-    }
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
   });
 
-  return next;
+  locks.set(id, gate);
+
+  return prev
+    .then(fn)
+    .finally(() => {
+      if (locks.get(id) === gate) {
+        locks.delete(id);
+      }
+
+      release();
+    });
 }
 export async function loadRuntime(gameId: string) {
   if (runtime.has(gameId)) return runtime.get(gameId)!;
