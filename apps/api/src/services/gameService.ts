@@ -42,7 +42,18 @@ export async function submitMove(gameId: string, userId: string, uci: string, pr
   let result: any;
   await withLock(gameId, async () => {
     const game = await prisma.game.findUnique({ where: { id: gameId } });
-    if (!game || game.status !== 'ACTIVE') throw new Error('CONFLICT');
+    if (!game || game.status !== 'ACTIVE') {
+      console.log('[MOVE CONFLICT]', {
+      gameId,
+      userId,
+      gameExists: !!game,
+      status: game?.status,
+      whitePlayerId: game?.whitePlayerId,
+      blackPlayerId: game?.blackPlayerId,
+      });
+
+  throw new Error('CONFLICT');
+}
     const r = await loadRuntime(gameId);
     const side = r.chess.turn();
     const expectedPlayer = side === 'w' ? game.whitePlayerId : game.blackPlayerId;
