@@ -50,7 +50,7 @@ export default function Board({ fen, onMove, playerColor }: BoardProps) {
   }
 
   return result;
-  }, [playerColor]);
+  }, [fen]);
 
   const handleSquareClick = async (square: string) => {
     if (submitting) return;
