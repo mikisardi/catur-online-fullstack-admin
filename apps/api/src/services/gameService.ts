@@ -3,11 +3,11 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../prisma.js';
 import { applyMove } from '../chess.js';
 
-export type RuntimeGame = { chess: Chess; whiteMs: number; blackMs: number; lastAt: number; pendingDrawBy?: string };
+export type RuntimeGame = { chess: Chess; whiteMs: number; blackMs: number; lastAt: number; clockStarted: boolean; pendingDrawBy?: string };
 const runtime = new Map<string, RuntimeGame>();
 const locks = new Map<string, Promise<void>>();
 export function getRuntime(id: string) { return runtime.get(id); }
-export function initRuntime(id: string, fen: string, whiteMs: number, blackMs: number) { const r = { chess: new Chess(fen), whiteMs, blackMs, lastAt: Date.now() }; runtime.set(id, r); return r; }
+export function initRuntime(id: string, fen: string, whiteMs: number, blackMs: number) { const r = { chess: new Chess(fen), whiteMs, blackMs, lastAt: Date.now(), clockStarted: false }; runtime.set(id, r); return r; }
 function withLock<T>(id: string, fn: () => Promise<T>): Promise<T> {
   const prev = locks.get(id) || Promise.resolve();
 
@@ -35,7 +35,7 @@ export async function loadRuntime(gameId: string) {
   if (!g) throw new Error('NOT_FOUND');
   const r = initRuntime(gameId, g.initialFen, g.initialSeconds * 1000, g.initialSeconds * 1000);
   for (const m of g.moves) r.chess.move({ from: m.moveUci.slice(0,2), to: m.moveUci.slice(2,4), promotion: m.moveUci.slice(4) || undefined });
-  const last = g.moves.at(-1); if (last) { r.whiteMs = last.clockWhiteMs; r.blackMs = last.clockBlackMs; }
+  const last = g.moves.at(-1); if (last) { r.whiteMs = last.clockWhiteMs; r.blackMs = last.clockBlackMs; r.clockStarted = true; r.lastAt = Date.now(); }
   return r;
 }
 export async function submitMove(gameId: string, userId: string, uci: string, promotion?: string) {
@@ -59,8 +59,13 @@ export async function submitMove(gameId: string, userId: string, uci: string, pr
     const expectedPlayer = side === 'w' ? game.whitePlayerId : game.blackPlayerId;
     if (expectedPlayer !== userId) throw new Error('FORBIDDEN');
     const now = Date.now();
-    const elapsed = now - r.lastAt;
-    if (side === 'w') r.whiteMs -= elapsed; else r.blackMs -= elapsed;
+    if (!r.clockStarted) {
+      r.clockStarted = true;
+      r.lastAt = now;
+    } else {
+      const elapsed = now - r.lastAt;
+      if (side === 'w') r.whiteMs -= elapsed; else r.blackMs -= elapsed;
+    }
     if ((side === 'w' ? r.whiteMs : r.blackMs) <= 0) {
       const res = side === 'w' ? 'BLACK' : 'WHITE';
       await finalizeGame(gameId, res as any, 'timeout', r);
@@ -121,6 +126,19 @@ async function performBotMove(
   if (!selected) return null;
 
   const now = Date.now();
+
+  if (!r.clockStarted) {
+    r.clockStarted = true;
+    r.lastAt = now;
+  } else {
+    const elapsed = now - r.lastAt;
+    if (botTurn === 'w') r.whiteMs -= elapsed; else r.blackMs -= elapsed;
+    if ((botTurn === 'w' ? r.whiteMs : r.blackMs) <= 0) {
+      const res = botTurn === 'w' ? 'BLACK' : 'WHITE';
+      await finalizeGame(gameId, res as any, 'timeout', r);
+      throw new Error('TIMEOUT');
+    }
+  }
 
   const move = applyMove(
     r.chess,
