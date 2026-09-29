@@ -10,7 +10,7 @@ function Game(){const {id}=useParams();const [g,setG]=useState<any>();const [sta
                 const move=async(uci:string)=>{try{await api('/api/v1/games/'+id+'/move',{method:'POST',body:JSON.stringify({move:uci})});const j=await api('/api/v1/games/'+id);setG(j.data)}catch(e:any){alert(e.message)}};return <Layout><div className="game">
                   <div>
                   <Board
-                    fen={g.fen || g.initialFen}
+                    fen={g.moves?.[g.moves.length - 1]?.fenAfter || g.initialFen}
                     onMove={move}
                     playerColor={playerColor}
                   />
