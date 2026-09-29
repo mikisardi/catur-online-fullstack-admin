@@ -66,7 +66,10 @@ export async function submitMove(gameId: string, userId: string, uci: string, pr
       const elapsed = now - r.lastAt;
       if (side === 'w') r.whiteMs -= elapsed; else r.blackMs -= elapsed;
     }
-    if ((side === 'w' ? r.whiteMs : r.blackMs) <= 0) {
+    if (
+      game.mode !== 'BOT' &&
+      (side === 'w' ? r.whiteMs : r.blackMs) <= 0
+    ) {
       const res = side === 'w' ? 'BLACK' : 'WHITE';
       await finalizeGame(gameId, res as any, 'timeout', r);
       throw new Error('TIMEOUT');
